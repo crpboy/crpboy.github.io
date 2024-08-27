@@ -1,2 +1,0 @@
-# crpboy.github.io
-blog
