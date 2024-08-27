@@ -1,4 +1,0 @@
-start
-```
-hugo server -D
-```
