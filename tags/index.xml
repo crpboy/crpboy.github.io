@@ -2,10 +2,10 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
     <channel>
         <title>Tags on crpboy</title>
-        <link>http://crpboy.github.io/tags/</link>
+        <link>https://crpboy.github.io/tags/</link>
         <description>Recent content in Tags on crpboy</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <copyright>crpboy</copyright><atom:link href="http://crpboy.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+        <copyright>crpboy</copyright><atom:link href="https://crpboy.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
     </channel>
 </rss>
