@@ -67,8 +67,6 @@
                 
                 </a>
                 
-                    <span class="emoji">😋</span>
-                
             </figure>
             
         
@@ -526,7 +524,7 @@
 </li>
 </ol>
 <h4 id="2221-分支预测器-bpu">2.2.2.1 分支预测器 BPU
-</h4><p><img src="/p/nscscc-2024-report/BPU.svg"
+</h4><p><img src="/BPU.svg"
 	
 	
 	
@@ -677,7 +675,7 @@
 <p>同时，为了保证指令乱序执行后，能够<strong>顺序</strong>地对于处理器状态进行更新，我们还需要对于重排序缓存<code>ROB</code>进行表项空间的申请，获得本级指令对应的<strong>ROB编号</strong>，从而保证最终在后端提交时能够通过编号实现顺序的提交。</p>
 <p>具体实现时，当<code>RAT</code>分配物理寄存器时，将会从空闲寄存器表<code>freelist</code>当中取最多两个空闲寄存器，作为原逻辑寄存器<code>areg</code>对应的物理寄存器<code>preg</code>。同时，这一级会向发射级发送占用寄存器的请求，以此阻塞发射队列当中的相关指令，从而保证了后端指令唤醒顺序的正确性。在申请<code>ROB</code>空间的时候，<code>ROB</code>通过其<code>fifo</code>指针分配两条指令对应的<code>ROB</code>编号，并且会保存指令对应的信息。</p>
 <p>至此，指令开始占用寄存器映射表信息、<code>ROB</code>表项、物理寄存器资源，可以认为指令从本级开始即将进入后端执行的流程当中。</p>
-<p><img src="/p/nscscc-2024-report/rename.drawio.svg"
+<p><img src="/rename.drawio.svg"
 	
 	
 	
@@ -691,7 +689,7 @@
 </h2><p>后端分为六个流水级，分别为<strong>分发</strong>（<code>Dispatch</code>）、<strong>发射</strong>（<code>Issue</code>）、<strong>读寄存器</strong>（<code>ReadReg</code>）、<strong>执行</strong>（<code>Execute</code>）、<strong>写回</strong>（<code>WriteBack</code>）、<strong>提交</strong>（<code>Commit</code>）。其中，执行级又根据流水线功能的不同，细分为1~3个流水级。算术流水线只有一级执行级，而乘除和访存有三级执行级。</p>
 <p>从发射级开始，后端分为四条独立的流水线，分别是2条<strong>算术</strong>执行流水线，1条<strong>乘除</strong>法执行流水线，1条<strong>访存</strong>执行流水线。</p>
 <p>需要注意的是，特权指令放在乘除法。为了保证csr写指令的正确性，在重排序缓存提交指令的时候，才写csr寄存器并冲刷整条流水线。</p>
-<p><img src="/p/nscscc-2024-report/backend-final.drawio.svg"
+<p><img src="/backend-final.drawio.svg"
 	
 	
 	
@@ -716,7 +714,7 @@
 <h3 id="233-读寄存器-readreg">2.3.3 读寄存器 ReadReg
 </h3><p>这一级流水线在每条流水线当中都独立存在，负责从物理寄存器当中读出源操作数对应的数值。寄存器堆对于每一条流水线都分配了一个读接口。同时这一级也会接收<strong>执行级</strong>和<strong>写回级</strong>前递的信息，用于实现指令的背靠背执行的前递信号传递。 发生前递时，我们会对于前递的寄存器号进行比较。于我们比较的是物理寄存器地址，必定保证写相关寄存器的指令最多只会存在一个，因此可以使用独热码的判命中逻辑，这节约了一定的逻辑复杂度。</p>
 <p>如果是算术流水线的读寄存器阶段，还会进行相关指令的唤醒。在本级进行唤醒，能够保证下一拍相关指令进入readreg级，从而直接从算术执行级当中获得前递的数据，从而保证了指令的背靠背执行。</p>
-<p><img src="/p/nscscc-2024-report/forward.drawio.svg"
+<p><img src="/forward.drawio.svg"
 	
 	
 	
@@ -824,18 +822,14 @@
 <p><code>I-Cache</code>和<code>D-Cache</code>采取了同样的组织形式，只是<code>I-Cache</code>取消了dirty位；bank在<code>I-Cache</code>代表了指令，在<code>D-Cache</code>中代表了数据。</p>
 <p>为了降低访存复杂度，我们着重设计了访存的状态机，为了获得优秀的硬件复杂度将复杂流程拆分。<br>
 具体状态分为：<code>idle</code>(闲置状态，判断命中)、<code>uncached_read</code>、<code>uncached_write</code>、<code>check_dirty</code>、<code>writeback</code>、<code>replace_line</code>，其中<code>I-Cache</code>无关于写操作的状态</p>
-<p><img src="/p/nscscc-2024-report/image-1.png"
-	width="451"
-	height="544"
-	srcset="/p/nscscc-2024-report/image-1_hu2819930101775771611.png 480w, /p/nscscc-2024-report/image-1_hu16228446889752569838.png 1024w"
+<p><img src="/image-1.png"
+	
+	
+	
 	loading="lazy"
 	
 		alt="alt text"
 	
-	
-		class="gallery-image" 
-		data-flex-grow="82"
-		data-flex-basis="198px"
 	
 ></p>
 <h3 id="237-写回-writeback">2.3.7 写回 WriteBack

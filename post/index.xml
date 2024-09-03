@@ -7,7 +7,7 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>crpboy</copyright>
-        <lastBuildDate>Tue, 03 Sep 2024 02:15:38 +0800</lastBuildDate><atom:link href="https://crpboy.github.io/post/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Tue, 03 Sep 2024 15:41:00 +0800</lastBuildDate><atom:link href="https://crpboy.github.io/post/index.xml" rel="self" type="application/rss+xml" /><item>
         <title>洛谷P6071『MdOI R1』Treequery</title>
         <link>https://crpboy.github.io/p/luogu-p6071-solution/</link>
         <pubDate>Tue, 03 Sep 2024 02:15:38 +0800</pubDate>
@@ -471,7 +471,7 @@
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;h4 id=&#34;2221-分支预测器-bpu&#34;&gt;2.2.2.1 分支预测器 BPU
-&lt;/h4&gt;&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/p/nscscc-2024-report/BPU.svg&#34;
+&lt;/h4&gt;&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/BPU.svg&#34;
 	
 	
 	
@@ -622,7 +622,7 @@
 &lt;p&gt;同时，为了保证指令乱序执行后，能够&lt;strong&gt;顺序&lt;/strong&gt;地对于处理器状态进行更新，我们还需要对于重排序缓存&lt;code&gt;ROB&lt;/code&gt;进行表项空间的申请，获得本级指令对应的&lt;strong&gt;ROB编号&lt;/strong&gt;，从而保证最终在后端提交时能够通过编号实现顺序的提交。&lt;/p&gt;
 &lt;p&gt;具体实现时，当&lt;code&gt;RAT&lt;/code&gt;分配物理寄存器时，将会从空闲寄存器表&lt;code&gt;freelist&lt;/code&gt;当中取最多两个空闲寄存器，作为原逻辑寄存器&lt;code&gt;areg&lt;/code&gt;对应的物理寄存器&lt;code&gt;preg&lt;/code&gt;。同时，这一级会向发射级发送占用寄存器的请求，以此阻塞发射队列当中的相关指令，从而保证了后端指令唤醒顺序的正确性。在申请&lt;code&gt;ROB&lt;/code&gt;空间的时候，&lt;code&gt;ROB&lt;/code&gt;通过其&lt;code&gt;fifo&lt;/code&gt;指针分配两条指令对应的&lt;code&gt;ROB&lt;/code&gt;编号，并且会保存指令对应的信息。&lt;/p&gt;
 &lt;p&gt;至此，指令开始占用寄存器映射表信息、&lt;code&gt;ROB&lt;/code&gt;表项、物理寄存器资源，可以认为指令从本级开始即将进入后端执行的流程当中。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/p/nscscc-2024-report/rename.drawio.svg&#34;
+&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/rename.drawio.svg&#34;
 	
 	
 	
@@ -636,7 +636,7 @@
 &lt;/h2&gt;&lt;p&gt;后端分为六个流水级，分别为&lt;strong&gt;分发&lt;/strong&gt;（&lt;code&gt;Dispatch&lt;/code&gt;）、&lt;strong&gt;发射&lt;/strong&gt;（&lt;code&gt;Issue&lt;/code&gt;）、&lt;strong&gt;读寄存器&lt;/strong&gt;（&lt;code&gt;ReadReg&lt;/code&gt;）、&lt;strong&gt;执行&lt;/strong&gt;（&lt;code&gt;Execute&lt;/code&gt;）、&lt;strong&gt;写回&lt;/strong&gt;（&lt;code&gt;WriteBack&lt;/code&gt;）、&lt;strong&gt;提交&lt;/strong&gt;（&lt;code&gt;Commit&lt;/code&gt;）。其中，执行级又根据流水线功能的不同，细分为1~3个流水级。算术流水线只有一级执行级，而乘除和访存有三级执行级。&lt;/p&gt;
 &lt;p&gt;从发射级开始，后端分为四条独立的流水线，分别是2条&lt;strong&gt;算术&lt;/strong&gt;执行流水线，1条&lt;strong&gt;乘除&lt;/strong&gt;法执行流水线，1条&lt;strong&gt;访存&lt;/strong&gt;执行流水线。&lt;/p&gt;
 &lt;p&gt;需要注意的是，特权指令放在乘除法。为了保证csr写指令的正确性，在重排序缓存提交指令的时候，才写csr寄存器并冲刷整条流水线。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/p/nscscc-2024-report/backend-final.drawio.svg&#34;
+&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/backend-final.drawio.svg&#34;
 	
 	
 	
@@ -661,7 +661,7 @@
 &lt;h3 id=&#34;233-读寄存器-readreg&#34;&gt;2.3.3 读寄存器 ReadReg
 &lt;/h3&gt;&lt;p&gt;这一级流水线在每条流水线当中都独立存在，负责从物理寄存器当中读出源操作数对应的数值。寄存器堆对于每一条流水线都分配了一个读接口。同时这一级也会接收&lt;strong&gt;执行级&lt;/strong&gt;和&lt;strong&gt;写回级&lt;/strong&gt;前递的信息，用于实现指令的背靠背执行的前递信号传递。 发生前递时，我们会对于前递的寄存器号进行比较。于我们比较的是物理寄存器地址，必定保证写相关寄存器的指令最多只会存在一个，因此可以使用独热码的判命中逻辑，这节约了一定的逻辑复杂度。&lt;/p&gt;
 &lt;p&gt;如果是算术流水线的读寄存器阶段，还会进行相关指令的唤醒。在本级进行唤醒，能够保证下一拍相关指令进入readreg级，从而直接从算术执行级当中获得前递的数据，从而保证了指令的背靠背执行。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/p/nscscc-2024-report/forward.drawio.svg&#34;
+&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/forward.drawio.svg&#34;
 	
 	
 	
@@ -769,18 +769,14 @@
 &lt;p&gt;&lt;code&gt;I-Cache&lt;/code&gt;和&lt;code&gt;D-Cache&lt;/code&gt;采取了同样的组织形式，只是&lt;code&gt;I-Cache&lt;/code&gt;取消了dirty位；bank在&lt;code&gt;I-Cache&lt;/code&gt;代表了指令，在&lt;code&gt;D-Cache&lt;/code&gt;中代表了数据。&lt;/p&gt;
 &lt;p&gt;为了降低访存复杂度，我们着重设计了访存的状态机，为了获得优秀的硬件复杂度将复杂流程拆分。&lt;br&gt;
 具体状态分为：&lt;code&gt;idle&lt;/code&gt;(闲置状态，判断命中)、&lt;code&gt;uncached_read&lt;/code&gt;、&lt;code&gt;uncached_write&lt;/code&gt;、&lt;code&gt;check_dirty&lt;/code&gt;、&lt;code&gt;writeback&lt;/code&gt;、&lt;code&gt;replace_line&lt;/code&gt;，其中&lt;code&gt;I-Cache&lt;/code&gt;无关于写操作的状态&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/p/nscscc-2024-report/image-1.png&#34;
-	width=&#34;451&#34;
-	height=&#34;544&#34;
-	srcset=&#34;https://crpboy.github.io/p/nscscc-2024-report/image-1_hu2819930101775771611.png 480w, https://crpboy.github.io/p/nscscc-2024-report/image-1_hu16228446889752569838.png 1024w&#34;
+&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/image-1.png&#34;
+	
+	
+	
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;alt text&#34;
 	
-	
-		class=&#34;gallery-image&#34; 
-		data-flex-grow=&#34;82&#34;
-		data-flex-basis=&#34;198px&#34;
 	
 &gt;&lt;/p&gt;
 &lt;h3 id=&#34;237-写回-writeback&#34;&gt;2.3.7 写回 WriteBack
