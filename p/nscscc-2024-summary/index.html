@@ -1,22 +1,20 @@
 <!DOCTYPE html>
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="概况 本次NSCSCC比赛，我们NoAXI团队取得了二等奖，使用乱序双发射实现CPU，IPC为0.78，频率为83MHz。 我们没有在规定的时间">
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="这下备战2025了">
 <title>NSCSCC2024 赛后总结</title>
 
 <link rel='canonical' href='https://crpboy.github.io/p/nscscc-2024-summary/'>
 
 <link rel="stylesheet" href="/scss/style.min.0304c6baf04e01a8fe70693791cb744d56a3578a3120a8796cefc66825aa39c7.css"><meta property='og:title' content="NSCSCC2024 赛后总结">
-<meta property='og:description' content="概况 本次NSCSCC比赛，我们NoAXI团队取得了二等奖，使用乱序双发射实现CPU，IPC为0.78，频率为83MHz。 我们没有在规定的时间">
+<meta property='og:description' content="这下备战2025了">
 <meta property='og:url' content='https://crpboy.github.io/p/nscscc-2024-summary/'>
 <meta property='og:site_name' content='crpboy'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2024-09-03T15:28:55&#43;08:00'/><meta property='article:modified_time' content='2024-09-03T15:28:55&#43;08:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2024-09-03T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-09-03T00:00:00&#43;00:00'/><meta property='og:image' content='https://crpboy.github.io/p/nscscc-2024-summary/cover.jpg' />
 <meta name="twitter:title" content="NSCSCC2024 赛后总结">
-<meta name="twitter:description" content="概况 本次NSCSCC比赛，我们NoAXI团队取得了二等奖，使用乱序双发射实现CPU，IPC为0.78，频率为83MHz。 我们没有在规定的时间">
+<meta name="twitter:description" content="这下备战2025了"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://crpboy.github.io/p/nscscc-2024-summary/cover.jpg' />
     <link rel="shortcut icon" href="/favicon.ico" />
-
-  
-
 
     </head>
     <body class="
@@ -291,7 +289,8 @@
             <nav id="TableOfContents">
   <ol>
     <li><a href="#概况">概况</a></li>
-    <li><a href="#准备初期">准备初期</a></li>
+    <li><a href="#心路历程">心路历程</a></li>
+    <li><a href="#启示反思和总结">启示，反思和总结</a></li>
   </ol>
 </nav>
         </div>
@@ -303,8 +302,20 @@
 
 
             <main class="main full-width">
-    <article class="main-article">
+    <article class="has-image main-article">
     <header class="article-header">
+        <div class="article-image">
+            <a href="/p/nscscc-2024-summary/">
+                <img src="/p/nscscc-2024-summary/cover_hu6911671592987521323.jpg"
+                        srcset="/p/nscscc-2024-summary/cover_hu6911671592987521323.jpg 800w, /p/nscscc-2024-summary/cover_hu10380069274795928816.jpg 1600w"
+                        width="800" 
+                        height="450" 
+                        loading="lazy"
+                        alt="Featured image of post NSCSCC2024 赛后总结" />
+                
+            </a>
+        </div>
+    
 
     <div class="article-details">
     
@@ -322,6 +333,10 @@
             <a href="/p/nscscc-2024-summary/">NSCSCC2024 赛后总结</a>
         </h2>
     
+        
+        <h3 class="article-subtitle">
+            这下备战2025了
+        </h3>
         
     </div>
 
@@ -356,7 +371,7 @@
 
 
                 <time class="article-time--reading">
-                    阅读时长: 1 分钟
+                    阅读时长: 3 分钟
                 </time>
             </div>
         
@@ -371,11 +386,24 @@
     <section class="article-content">
     
     
-    <h2 id="概况">概况
+    <p><a class="link" href="https://github.com/NoAXI/NoAXI-LoongArch-CPU"  target="_blank" rel="noopener"
+    >项目链接</a></p>
+<h2 id="概况">概况
 </h2><p>本次NSCSCC比赛，我们NoAXI团队取得了二等奖，使用乱序双发射实现CPU，IPC为0.78，频率为83MHz。</p>
-<p>我们没有在规定的时间内成功启动Linux系统，导致我们最终的系统成绩分偏低。所幸答辩成绩还算过关，最终顺利拿到了二等奖。</p>
-<h2 id="准备初期">准备初期
-</h2>
+<p>比较遗憾的是，我们没有在规定的时间内成功启动Linux系统，导致我们最终的系统成绩分偏低。所幸答辩成绩还算过关，最终顺利拿到了二等奖。</p>
+<h2 id="心路历程">心路历程
+</h2><p>我们团队一开始都是打个人赛的，直到6月中旬才决定转成团队赛。所以我必须得介绍一下我们团队在组队之前的神奇经历。</p>
+<p>我在3月底开始接触的龙芯杯，先花了半个月时间，配置环境并且学习chisel的语法。大概到了4月中旬的时候，我写出了一个最朴素的顺序五级流水。此后就在此基础上不断完善，一直到6月份写到了Cache和TLB的开发。当时并不知道个人赛会有这么多简化，直到6月份自己做到了TLB才发现，已经走的太远了。我们的AXI状态机和TLB都没法用在个人赛当中，只能去团队赛了。</p>
+<p>于是果断转团队赛，跟涛哥一起组了NoAXI队。从6月中旬开始，我花了一周时间啃完了《超标量》并设计了乱序的基础结构。考试周期间比较忙，一直到7月份才有空写代码。我们团队从零开始，完全抛弃了原有的5级流水线设计，重写了一份乱序的代码，我主要负责的就是乱序架构相关的内容。大概到了7月中旬，终于成功地跑通了仿真。</p>
+<p>但是当时我们因为DCache中SRAM实现上的问题，出现了仿真通过，上板未通过的情况。我们前后花了一周的时间去debug，在vivado里面拉debug信号进行调试，一跑就是两个小时，可以说是非常痛苦。</p>
+<p>调完bug之后，我们的初赛也差不多相当于准备完毕了。此后我跑去起SoC，涛哥则准备启动linux。原本我设想的是起一个往年一等奖级别的定制化SoC，能够启动大部分的外设的，但因为驱动相关的原因，我最终没有成功启动以太网口，只能使用官方提供的SoC。我们最后的Linux也因为分支预测一致性问题而启动失败。可以说决赛相关的工作我们几乎全军覆没。</p>
+<p>最后两天我们连续熬了两个通宵，改了起Linux过程中的五六个bug，但最终差临门一脚，没有成功。算是留下了挺多的遗憾。</p>
+<h2 id="启示反思和总结">启示，反思和总结
+</h2><p>我们最终的设计版本其实很早就设计完毕了，但最终我们在访存相关的维护上面花了非常多的时间，尤其是访存的唤醒信号时延和一致性维护问题。我也希望，读到这篇文章的人在设计乱序CPU后端访存部件的时候，务必注意这些问题。</p>
+<p>其实很多东西，不去实操是绝对不会懂得的。永远不要想当然，永远不要去优化自己猜想的路径，而应该根据数据进行优化。我在做访存之前，甚至想象过访存是一个与算术流水线差不多复杂度的东西，这使得我们在设计推测唤醒和优化时序的时候付出了惨重的代价。我们的唤醒也做得有点问题，我把一个串行逻辑写了进去，导致我最终无法把访存的推测唤醒加到里面去。这些问题很大程度上都是我想当然导致的。</p>
+<p>说实话，我们这次比赛全程都在和时间赛跑，DDL一个接着一个地来，把我压的喘不过气来。6月中旬开始做乱序，8月中旬就要决赛提交，2个月的时间对于我们来说实在是太短了。我不止一次地想，如果再多给我们一个星期，说不定就能有新的转机了呢。但不论如何，我们既然做了乱序，就必须克服乱序带来的诸多设计难题。赶不上DDL也只能说是情有可原。</p>
+<p>不过设计乱序的过程也的确让我学到了大量实操经验，我能明显感觉到自己在开发上更加熟练了。赛后我和涛哥讨论，发现其实我们的CPU里面存在大量可优化的地方。还是明年再来一场，争取不留遗憾吧。</p>
+
 </section>
 
 
