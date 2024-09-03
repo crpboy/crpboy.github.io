@@ -13,7 +13,7 @@
         <pubDate>Tue, 03 Sep 2024 02:15:38 +0800</pubDate>
         
         <guid>https://crpboy.github.io/p/luogu-p6071-solution/</guid>
-        <description>&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.luogu.com.cn/problem/P6071&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+        <description>&lt;img src="https://crpboy.github.io/p/luogu-p6071-solution/cover.png" alt="Featured image of post 洛谷P6071『MdOI R1』Treequery" /&gt;&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.luogu.com.cn/problem/P6071&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;原题链接&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;考虑用主席树+倍增+dfn维护&lt;/p&gt;
 &lt;p&gt;首先，当$p\in[l,r]$，或者p的祖先和子树内均有点$x\in[l,r]$的时候，答案必为0。&lt;/p&gt;
