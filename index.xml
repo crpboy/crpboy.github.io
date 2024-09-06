@@ -33,37 +33,6 @@
 </description>
         </item>
         <item>
-        <title>乱序CPU入门指南</title>
-        <link>https://crpboy.github.io/p/out-of-order-tutorial/</link>
-        <pubDate>Mon, 02 Sep 2024 00:00:00 +0000</pubDate>
-        
-        <guid>https://crpboy.github.io/p/out-of-order-tutorial/</guid>
-        <description>&lt;img src="https://crpboy.github.io/p/out-of-order-tutorial/cover.png" alt="Featured image of post 乱序CPU入门指南" /&gt;&lt;h2 id=&#34;背景&#34;&gt;背景
-&lt;/h2&gt;&lt;p&gt;龙芯杯之后，我觉得有必要写一个超标量处理器相关的总结文章。在跟着《超标量处理器设计》学习乱序的过程当中，我遇到了大量书上没有涉及到的细节问题。这一方面是因为我个人能力有限，忽略掉了原书的一些细节描述，导致理解上的偏差；另一方面，对于初学者而言，确实存在很多基础问题，一旦没搞懂就会导致巨大的理解成本。所以就有了这篇文章。&lt;/p&gt;
-&lt;h2 id=&#34;前置知识&#34;&gt;前置知识
-&lt;/h2&gt;&lt;p&gt;请保证在你阅读本文章之前，已经掌握以下知识点：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;对于基础的单发射五级流水线CPU有一定的了解&lt;/li&gt;
-&lt;li&gt;能够实现一个拥有算术、分支、访存功能的简易CPU&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;如果不够了解相关内容，可以先去学习《CPU设计实战》再来阅读本文章。&lt;/p&gt;
-&lt;h2 id=&#34;乱序设计概述&#34;&gt;乱序设计概述
-&lt;/h2&gt;&lt;h3 id=&#34;定义&#34;&gt;定义
-&lt;/h3&gt;&lt;p&gt;我们不妨先看看《超标量》是怎么说的。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;超标量处理器能够在一个周期内执行多条指令，这样可以缩短一个程序的执行时间，指令在处理器中可以按照程序中指定的顺序来执行，也可以不遵循这个顺序，只要指令的源操作数都准备好了，它就可以被执行，这种方式就称为乱序执行(out-of-order)。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;注意这个描述：“只要指令的源操作数都准备好了，它就可以被执行”。对于一个乱序执行过程而言，指令的处理可以大致分为 等待源操作数 $\to$ 乱序执行 $\to$ 顺序提交 三个过程。&lt;/p&gt;
-&lt;p&gt;乱序不代表完全混乱，乱序CPU也需要遵守冯诺依曼模型规定的顺序执行规则。因此，它至少得在执行前保证能够读取到正确的源操作数值，并且保证这条指令的执行结果必定会生效，不会因为分支失败等原因被冲刷。&lt;/p&gt;
-&lt;h3 id=&#34;乱序的优势&#34;&gt;乱序的优势
-&lt;/h3&gt;&lt;p&gt;首先明确一个概念：相关性。令指令1为&lt;code&gt;C=A+B&lt;/code&gt;，指令2为&lt;code&gt;D=C+E&lt;/code&gt;，则D值的求出依赖于C值，我们称指令1与指令2相关。这就是指令之间的相关性。在CPU的执行过程中存在着大量的相关指令，他们之间的依赖关系是实现程序并行执行的最大阻碍。&lt;/p&gt;
-&lt;p&gt;在编译过程当中，数据会根据依赖关系，构成一张有向无环图DAG。这张DAG上，每一条链都是由若干具有相关性的指令组成的。而乱序能够在不存在相关性的两条DAG链上，各自独立地往下执行，直到碰到需要阻塞的指令为止。&lt;/p&gt;
-&lt;p&gt;对于顺序CPU而言，一旦某条多周期指令需要阻塞流水线，则后面所有的指令，不论是否与这条指令相关，都会被阻塞住。但对于乱序CPU而言，这只是DAG图上的某条链产生了阻塞，不影响其他链的执行进程，所以所有不具备相关性的指令，都仍然可以正常地在阻塞期间被执行。这就使得乱序架构在多周期/单周期指令混杂的场景中能够最大程度地发挥指令并行的能力。&lt;/p&gt;
-&lt;h3 id=&#34;乱序cpu的基础结构&#34;&gt;乱序CPU的基础结构
-&lt;/h3&gt;&lt;p&gt;未完待续&amp;hellip;&lt;/p&gt;
-</description>
-        </item>
-        <item>
         <title>归档</title>
         <link>https://crpboy.github.io/archives/</link>
         <pubDate>Tue, 27 Aug 2024 00:00:00 +0000</pubDate>
