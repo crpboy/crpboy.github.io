@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="基于async_task库解析Rust操作系统内核异步编程细节">
+<title>基于Future的Rust操作系统内核异步编程</title>
+
+<link rel='canonical' href='https://crpboy.github.io/p/os-future/'>
+
+<link rel="stylesheet" href="/scss/style.min.0304c6baf04e01a8fe70693791cb744d56a3578a3120a8796cefc66825aa39c7.css"><meta property='og:title' content="基于Future的Rust操作系统内核异步编程">
+<meta property='og:description' content="基于async_task库解析Rust操作系统内核异步编程细节">
+<meta property='og:url' content='https://crpboy.github.io/p/os-future/'>
+<meta property='og:site_name' content='crpboy'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2024-11-14T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-11-14T00:00:00&#43;00:00'/><meta property='og:image' content='https://crpboy.github.io/p/os-future/cover.jpg' />
+<meta name="twitter:title" content="基于Future的Rust操作系统内核异步编程">
+<meta name="twitter:description" content="基于async_task库解析Rust操作系统内核异步编程细节"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://crpboy.github.io/p/os-future/cover.jpg' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/small_avatar_hu3172385497152179006.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">crpboy</a></h1>
+            <h2 class="site-description">还是太菜了</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://github.com/crpboy'
+                        target="_blank"
+                        title="1-GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://space.bilibili.com/104688784'
+                        target="_blank"
+                        title="2-bilibili"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-bilibili"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 10a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v6a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4v-6z" /><path d="M8 3l2 3" /><path d="M16 3l-2 3" /><path d="M9 13v-2" /><path d="M15 11v2" /></svg>
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://steamcommunity.com/profiles/76561198391695717/'
+                        target="_blank"
+                        title="3-steam"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-device-gamepad-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5h3.5a5 5 0 0 1 0 10h-5.5l-4.015 4.227a2.3 2.3 0 0 1 -3.923 -2.035l1.634 -8.173a5 5 0 0 1 4.904 -4.019h3.4z" /><path d="M14 15l4.07 4.284a2.3 2.3 0 0 0 3.925 -2.023l-1.6 -8.232" /><path d="M8 9v2" /><path d="M7 10h2" /><path d="M14 10h2" /></svg>
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://bgm.tv/user/crpboy'
+                        target="_blank"
+                        title="4-bangumi"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-device-tv-old"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M16 3l-4 4l-4 -4" /><path d="M15 7v13" /><path d="M18 15v.01" /><path d="M18 12v.01" /></svg>
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>主页</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>归档</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>友链</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+        
+            
+                
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#基于future的rust操作系统内核异步编程">基于Future的Rust操作系统内核异步编程</a>
+      <ol>
+        <li><a href="#前言">前言</a></li>
+        <li><a href="#async">async</a></li>
+        <li><a href="#future">Future</a></li>
+        <li><a href="#waker">Waker</a>
+          <ol>
+            <li><a href="#waker与context的关系">Waker与Context的关系</a></li>
+            <li><a href="#waker的实现">Waker的实现</a></li>
+          </ol>
+        </li>
+        <li><a href="#executor">Executor</a>
+          <ol>
+            <li><a href="#executor的典型实现">Executor的典型实现</a></li>
+            <li><a href="#executorspawn">executor::spawn</a></li>
+            <li><a href="#executorrun-及-schedule-的调用方式">executor::run 及 schedule 的调用方式</a></li>
+          </ol>
+        </li>
+        <li><a href="#重归waker">重归Waker</a>
+          <ol>
+            <li><a href="#调用wakerwake的时机">调用waker::wake的时机</a></li>
+            <li><a href="#waker到底唤醒了谁--从哪来">waker到底唤醒了谁 / 从哪来</a></li>
+          </ol>
+        </li>
+        <li><a href="#总结">总结</a></li>
+      </ol>
+    </li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+            
+        
+    </aside>
+
+
+            <main class="main full-width">
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/os-future/">
+                <img src="/p/os-future/cover_hu17568078199958482916.jpg"
+                        srcset="/p/os-future/cover_hu17568078199958482916.jpg 800w, /p/os-future/cover_hu10430037694156072610.jpg 1600w"
+                        width="800" 
+                        height="449" 
+                        loading="lazy"
+                        alt="Featured image of post 基于Future的Rust操作系统内核异步编程" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/os/" >
+                OS
+            </a>
+        
+            <a href="/categories/async/" >
+                Async
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/os-future/">基于Future的Rust操作系统内核异步编程</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            基于async_task库解析Rust操作系统内核异步编程细节
+        </h3>
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Nov 14, 2024</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 11 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="基于future的rust操作系统内核异步编程">基于Future的Rust操作系统内核异步编程
+</h2><p>2024/11/14 by crpboy</p>
+<h3 id="前言">前言
+</h3><p>本文是有关使用<code>async_task</code>进行操作系统内核异步编程的解析, 不涉及<code>tokio</code>运行时的解析.</p>
+<p>建议先阅读官方文档了解基础的异步编程语法.</p>
+<p>rust使用<code>async</code>和<code>await</code>进行异步编程, 其底层实现为<code>Future</code>特性, 具体语法不再赘述.</p>
+<p>可以参考官方文档. <a class="link" href="https://course.rs/advance/async/intro.html"  target="_blank" rel="noopener"
+    >Rust语言圣经</a> <a class="link" href="https://huangjj27.github.io/async-book/01_getting_started/01_chapter.html"  target="_blank" rel="noopener"
+    >Rust 中的异步编程</a>.</p>
+<h3 id="async">async
+</h3><p>在rust当中, <code>async</code>是使用<strong>无栈协程</strong>机制 (关于无栈协程, 可以看<a class="link" href="https://www.bilibili.com/video/BV1dv4y127YT"  target="_blank" rel="noopener"
+    >这个视频</a>) 实现的, 其内部是一个状态机, 下面我将通过一个例子来说明.</p>
+<p>观察下面这个函数, 其中<code>func_1/2/3</code>都是异步函数, 可能无法立即得到返回.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">func_main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="fm">println!</span><span class="p">(</span><span class="s">&#34;process 1&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">func_1</span><span class="p">().</span><span class="k">await</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="fm">println!</span><span class="p">(</span><span class="s">&#34;process 2&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">func_2</span><span class="p">().</span><span class="k">await</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="fm">println!</span><span class="p">(</span><span class="s">&#34;process 3&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">func_3</span><span class="p">().</span><span class="k">await</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="fm">println!</span><span class="p">(</span><span class="s">&#34;process 4&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>异步函数可以被转化为一个状态机模型. 本例中, 异步函数被三个<code>.await</code>语句拆分成为了四个部分, 每个<code>.await</code>都有 完成 / 等待 两种执行结果, 将它上下的执行部分通过 完成 / 等待 这两条状态转移边连接起来.</p>
+<p>画个图就很清楚了.</p>
+<p><img src="/future_fsm.drawio.svg"
+	
+	
+	
+	loading="lazy"
+	
+		alt="future_fsm.drawio"
+	
+	
+></p>
+<p>假如子函数<code>func_n</code>能够执行完毕, 那就推动当前状态机进度, 从<code>process_n</code>走到<code>process_n+1</code>, 否则当前函数就阻塞在了<code>func_n</code>, 我们可以考虑让权, 等<code>func_n</code>满足恢复执行的条件了, 再去尝试推动函数进展. 关于让权和恢复的过程, 我会在后续的执行器部分详细说明.</p>
+<h3 id="future">Future
+</h3><p>事实上, <code>async fn</code>是<code>Future</code>的一个语法糖, 它上将原函数包装为了一个带有<code>Future</code>特性的匿名类.</p>
+<p>为了深入了解, 我们得来看一下<code>Future</code>的具体定义:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">pub</span><span class="w"> </span><span class="k">trait</span><span class="w"> </span><span class="n">Future</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">type</span> <span class="nc">Output</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">fn</span> <span class="nf">poll</span><span class="p">(</span><span class="bp">self</span>: <span class="nc">Pin</span><span class="o">&lt;&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">Self</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">cx</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">Context</span><span class="o">&lt;</span><span class="nb">&#39;_</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Poll</span><span class="o">&lt;</span><span class="bp">Self</span>::<span class="n">Output</span><span class="o">&gt;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">pub</span><span class="w"> </span><span class="k">enum</span> <span class="nc">Poll</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Ready</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Pending</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Future的关键是<code>poll</code>函数, 它会通过返回<code>Poll::Ready(T)</code>或<code>Poll::Pending</code>向上级函数反馈当前Future的执行情况信息. 而关于<code>Future.poll</code>的具体用法,  大部分的教材都是这么说的:</p>
+<blockquote>
+<p>你可以通过对带有<code>Future</code>特性的类调用<code>poll</code>来尝试&quot;推动它的进展&quot;</p>
+</blockquote>
+<p>什么叫&quot;推动进展&quot;? 其实就是在Future对应的状态机上, 尝试从上一个状态转移到下一个状态.</p>
+<ul>
+<li>
+<p>如果子函数 (严格来说是子Future, 下略) 返回了<code>Ready</code>, 当前函数会流畅地继续执行下去.</p>
+</li>
+<li>
+<p>如果子函数返回了<code>Pending</code>, 那么当前函数调用链都会逐级返回<code>Pending</code>, 因此整条函数调用链被阻塞, 一般会在这里选择让权等待.</p>
+</li>
+</ul>
+<p>一个异步函数内的<code>.await</code>调用相当于对于子函数进行一次<code>poll</code>的调用, 假如子函数阻塞在了<code>Pending</code>状态, 那么后续将通过执行器重新进行<code>poll</code>调用直到返回<code>Ready</code>为止.</p>
+<h3 id="waker">Waker
+</h3><h4 id="waker与context的关系">Waker与Context的关系
+</h4><p>在上文当中我刻意省略了有关<code>poll</code>中的<code>Context</code>参数的内容. 目前<code>Context</code>当中只有<code>Waker</code>被真正使用, 所以可以暂时认为<code>Context</code>和<code>Waker</code>是等价的. 官方也在文档里说明了这一点.</p>
+<p>现在让我们回过头来重新看一下<code>poll</code>函数:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">fn</span> <span class="nf">poll</span><span class="p">(</span><span class="bp">self</span>: <span class="nc">Pin</span><span class="o">&lt;&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">Self</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">cx</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">Context</span><span class="o">&lt;</span><span class="nb">&#39;_</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Poll</span><span class="o">&lt;</span><span class="bp">Self</span>::<span class="n">Output</span><span class="o">&gt;</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>这个传入的<code>cx</code>就是用于传递<code>Waker</code>信息的, 我们可以通过<code>cx.waker()</code>将内部的<code>Waker</code>取出进行调用.</p>
+<p>那么<code>Waker</code>到底是用来干什么的呢? 很多教材都会说这是个&quot;唤醒器&quot;. 但什么时候需要唤醒? 唤醒的对象是谁? 什么时候需要保存唤醒器? 唤醒信号是如何通知的? 唤醒的具体过程又是如何? 一概不知.</p>
+<p>问题太多, 所以我们先按下不表, 必须等完整的了解<code>Waker</code>和<code>Executor</code>的实现之后, 才能够解答这个问题.</p>
+<h4 id="waker的实现">Waker的实现
+</h4><p>接下来让我们来看看<code>Waker</code>的定义:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">Waker</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">waker</span>: <span class="nc">RawWaker</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// ignore phantom data
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">RawWaker</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">data</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="p">(),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">vtable</span>: <span class="kp">&amp;</span><span class="nb">&#39;static</span> <span class="nc">RawWakerVTable</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>可以发现<code>Waker</code>的内部实现为<code>RawWaker</code>, <code>RawWaker</code>内部保存了<code>data</code>和<code>vtable</code>.</p>
+<p><code>data</code>用于保存<code>Waker</code>对应的任务的相关数据, 在<code>async_task</code>当中, 它指向了<code>RawTask</code>这个结构体, 其中保存了一个任务的所有信息, 可以用于后续状态的恢复.</p>
+<p><code>vtable</code>保存了一个<code>&amp;'static RawWakerVTable</code>的指针, 我们来看看内部实现:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">RawWakerVTable</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">clone</span>: <span class="nc">unsafe</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="p">())</span><span class="w"> </span>-&gt; <span class="nc">RawWaker</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">wake</span>: <span class="nc">unsafe</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="p">()),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">wake_by_ref</span>: <span class="nc">unsafe</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="p">()),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nb">drop</span>: <span class="nc">unsafe</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="p">()),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>可以看到, <code>vtable</code>内部保存着四个函数指针, 对应了<code>waker</code>的四个基本函数. 但这四个函数的具体实现取决于<code>waker</code>对应的运行时环境. 在调用<code>Waker.wake_by_ref()</code>等函数的时候, 就会从<code>vtable</code>当中取出对应的函数入口进行执行.</p>
+<p>我们以<code>async_task</code>库为例, 在<code>async_task</code>当中, 会在创建一个<code>Task</code>的时候, 在内部创建一个链接着它自定义实现的上述四个函数入口的<code>vtable</code>, 并在创建<code>waker</code>的时候, 将<code>vtable</code>传递给<code>waker</code>.</p>
+<p>这样<code>Waker</code>就可以通过调用<code>cx.waker().wake_by_ref()</code>等函数, 使用<code>async_task</code>自定义的方法来进行唤醒了.</p>
+<p>至此我们也可以知道前文当中, 为什么关于<code>Waker</code>会产生这么多的疑惑: 因为<code>Waker</code>的内部函数实现取决于它使用的运行时库的实现, 不同的库的调度策略并不一致. 所以, 接下来我将对于<code>async_task</code>运行时及其对应的<code>Executor</code>实现进行进一步的解释.</p>
+<h3 id="executor">Executor
+</h3><h4 id="executor的典型实现">Executor的典型实现
+</h4><p>与<code>Future</code>和<code>Waker</code>等Rust原生类不同, 在内核编程当中<code>Executor</code>是需要自己进行实现的, 更具体地来说, 你需要给出执行器的调度策略, 但并不需要关心内部的执行流程.</p>
+<p>下面是一个典型的<code>async_task</code>下的执行器的实现, 使用了双端队列进行维护. 其中<code>spawn</code>函数用于生成一个新任务, <code>run</code>用于执行任务.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="sd">//! executor.rs
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span> <span class="nc">Executor</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">queue</span>: <span class="nc">Mutex</span><span class="o">&lt;</span><span class="n">VecDeque</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;&gt;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">Executor</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">new</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nc">Self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="bp">Self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">queue</span>: <span class="nc">Mutex</span>::<span class="n">new</span><span class="p">(</span><span class="n">VecDeque</span>::<span class="n">new</span><span class="p">()),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">fn</span> <span class="nf">push_back</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">runnable</span>: <span class="nc">Runnable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">queue</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">unwrap</span><span class="p">().</span><span class="n">push_back</span><span class="p">(</span><span class="n">runnable</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">fn</span> <span class="nf">push_front</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">runnable</span>: <span class="nc">Runnable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">queue</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">unwrap</span><span class="p">().</span><span class="n">push_front</span><span class="p">(</span><span class="n">runnable</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">fn</span> <span class="nf">pop_front</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Option</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">queue</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">unwrap</span><span class="p">().</span><span class="n">pop_front</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="fm">lazy_static!</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">ref</span><span class="w"> </span><span class="no">EXECUTOR</span>: <span class="nc">Executor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executor</span>::<span class="n">new</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="sd">/// Add a task into task queue
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">spawn</span><span class="o">&lt;</span><span class="n">F</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="o">&gt;</span><span class="p">(</span><span class="n">future</span>: <span class="nc">F</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">where</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">F</span>: <span class="nc">Future</span><span class="o">&lt;</span><span class="n">Output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">R</span><span class="o">&gt;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">Send</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">&#39;static</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">R</span>: <span class="nb">Send</span> <span class="o">+</span><span class="w"> </span><span class="nb">&#39;static</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">schedule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">runnable</span>: <span class="nc">Runnable</span><span class="p">,</span><span class="w"> </span><span class="n">info</span>: <span class="nc">ScheduleInfo</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">info</span><span class="p">.</span><span class="n">woken_while_running</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="no">EXECUTOR</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">runnable</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="no">EXECUTOR</span><span class="p">.</span><span class="n">push_front</span><span class="p">(</span><span class="n">runnable</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">runnable</span><span class="p">,</span><span class="w"> </span><span class="n">handle</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">async_task</span>::<span class="n">spawn</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">future</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">WithInfo</span><span class="p">(</span><span class="n">schedule</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">runnable</span><span class="p">.</span><span class="n">schedule</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">handle</span><span class="p">.</span><span class="n">detach</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="sd">/// run next task
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="kd">let</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="n">runnable</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">EXECUTOR</span><span class="p">.</span><span class="n">pop_front</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">runnable</span><span class="p">.</span><span class="n">run</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="executorspawn">executor::spawn
+</h4><p>我们来看生成一个新任务的过程.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">spawn</span><span class="o">&lt;</span><span class="n">F</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="o">&gt;</span><span class="p">(</span><span class="n">future</span>: <span class="nc">F</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">where</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">F</span>: <span class="nc">Future</span><span class="o">&lt;</span><span class="n">Output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">R</span><span class="o">&gt;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">Send</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">&#39;static</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">R</span>: <span class="nb">Send</span> <span class="o">+</span><span class="w"> </span><span class="nb">&#39;static</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">schedule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">move</span><span class="w"> </span><span class="o">|</span><span class="n">runnable</span>: <span class="nc">Runnable</span><span class="p">,</span><span class="w"> </span><span class="n">info</span>: <span class="nc">ScheduleInfo</span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">info</span><span class="p">.</span><span class="n">woken_while_running</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="no">EXECUTOR</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">runnable</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="no">EXECUTOR</span><span class="p">.</span><span class="n">push_front</span><span class="p">(</span><span class="n">runnable</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">runnable</span><span class="p">,</span><span class="w"> </span><span class="n">handle</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">async_task</span>::<span class="n">spawn</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">future</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">WithInfo</span><span class="p">(</span><span class="n">schedule</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">runnable</span><span class="p">.</span><span class="n">schedule</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">handle</span><span class="p">.</span><span class="n">detach</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>首先, 我们通过定义<code>schedule</code>闭包, 定义了当前执行器的调度策略. 请注意, 在<code>async_task</code>当中, 所有的执行器调度都是通过这个<code>schedule</code>发生的,  <code>async_task</code>内部向<code>executor</code>传递调度信息的<strong>唯一方式</strong>, 就是通过这个<code>schedule</code>.</p>
+<p>然后, 通过调用<code>async_task::spawn</code>, 可以生成一个新的任务, 其中就传入了<code>schedule</code>作为调度策略.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">runnable</span><span class="p">,</span><span class="w"> </span><span class="n">handle</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">async_task</span>::<span class="n">spawn</span><span class="p">(</span><span class="n">future</span><span class="p">,</span><span class="w"> </span><span class="n">WithInfo</span><span class="p">(</span><span class="n">schedule</span><span class="p">));</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>这里的<code>async_task::spawn</code>会返回两个返回值, 它们的类型分别为<code>Runnable</code>和<code>Task&lt;future::Output&gt;</code>.</p>
+<p>我们查看<code>async_task::spawn</code>的内部实现, 会发现它最终是由内部的<code>Builder.spawn_unchecked</code>函数进行实现的:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="sd">//! Builder.spawn_unchecked
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="c1">// 通过future和schedule创建一个RawTask, 再把RawTask的信息转为指针返回
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">let</span><span class="w"> </span><span class="n">ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RawTask</span>::<span class="o">&lt;</span><span class="n">Fut</span><span class="p">,</span><span class="w"> </span><span class="n">Fut</span>::<span class="n">Output</span><span class="p">,</span><span class="w"> </span><span class="n">S</span><span class="p">,</span><span class="w"> </span><span class="n">M</span><span class="o">&gt;</span>::<span class="n">allocate</span><span class="p">(</span><span class="n">future</span><span class="p">,</span><span class="w"> </span><span class="n">schedule</span><span class="p">,</span><span class="w"> </span><span class="bp">self</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// 通过ptr创建runnable
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">let</span><span class="w"> </span><span class="n">runnable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Runnable</span>::<span class="n">from_raw</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// 通过ptr创建task
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">let</span><span class="w"> </span><span class="n">task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ptr</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">_marker</span>: <span class="nc">PhantomData</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">(</span><span class="n">runnable</span><span class="p">,</span><span class="w"> </span><span class="n">task</span><span class="p">)</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>在函数内部, 会调用<code>RawTask::allocate</code>来进行<code>RawTask</code>的生成. 查看<code>RawTask</code>发现, <code>RawTask</code>是真正保存了任务的所有信息的结构体:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">pub</span><span class="p">(</span><span class="k">crate</span><span class="p">)</span><span class="w"> </span><span class="k">struct</span> <span class="nc">RawTask</span><span class="o">&lt;</span><span class="n">F</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">S</span><span class="p">,</span><span class="w"> </span><span class="n">M</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="sd">/// The task header.
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="w">    </span><span class="k">pub</span><span class="p">(</span><span class="k">crate</span><span class="p">)</span><span class="w"> </span><span class="n">header</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">Header</span><span class="o">&lt;</span><span class="n">M</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="sd">/// The schedule function.
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="w">    </span><span class="k">pub</span><span class="p">(</span><span class="k">crate</span><span class="p">)</span><span class="w"> </span><span class="n">schedule</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">S</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="sd">/// The future.
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="w">    </span><span class="k">pub</span><span class="p">(</span><span class="k">crate</span><span class="p">)</span><span class="w"> </span><span class="n">future</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="n">F</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="sd">/// The output of the future.
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="w">    </span><span class="k">pub</span><span class="p">(</span><span class="k">crate</span><span class="p">)</span><span class="w"> </span><span class="n">output</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">Panic</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>而当<code>RawTask</code>生成完毕之后, 会通过<code>ptr</code>传回一个指针以供<code>Runnable</code>和<code>Task</code>创建.</p>
+<p>可以看出, <code>Runnable</code>和<code>Task</code> 都从同一个<code>ptr</code>创建而来, 是对同一个<code>RawTask</code>的两种不同的数据保存形式.</p>
+<p>事实上, <code>Runnable</code>保留了使用者与任务的信息交互接口, 在我们实际交互的时候, 通常都是调用<code>Runnable</code>的接口完成</p>
+<p>而<code>Task</code>用于保存任务实际的执行环境信息, 在本文中, 使用的时候我们不会直接对它进行修改.</p>
+<h4 id="executorrun-及-schedule-的调用方式">executor::run 及 schedule 的调用方式
+</h4><p>先来回顾一下执行器执行的过程</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="sd">/// run next task
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="kd">let</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="n">runnable</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">EXECUTOR</span><span class="p">.</span><span class="n">pop_front</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">runnable</span><span class="p">.</span><span class="n">run</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>我们发现, 每一次运行<code>run</code>, 程序都会从执行器的双端队列队首通过<code>pop_front</code>取出一个待执行的<code>Runnable</code>对象, 尝试对它进行执行. 这里在内部实现上就是对于<code>runnable</code>对应的<code>Future</code>调用了一次<code>poll</code>轮询.</p>
+<p>那么问题来了, 有<code>pop_front</code>就应该有<code>push</code>. 我们目前的代码里, 唯一涉及向队列<code>push</code>的操作, 就只有<code>schedule</code>当中的<code>push_front</code>和<code>push_back</code>. 那么<code>schedule</code>一定在<code>run</code>函数被调用后的某处也跟着一起被调用了才对.</p>
+<p>但奇怪的是, 在<code>run</code>函数当中压根就没有对于<code>schedule</code>的调用操作. 事实上, 就算进入<code>Runnable.run</code>内部寻找, 也并没有对于<code>schedule</code>函数的直接调用. 那么<code>schedule</code>到底在哪里被调用了呢?</p>
+<p>最终我们在<code>Task</code>的<code>wake</code>函数实现当中找到了如下代码:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">match</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">raw</span><span class="p">.</span><span class="n">header</span><span class="p">).</span><span class="n">state</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">state</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">state</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="no">SCHEDULED</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Ordering</span>::<span class="n">AcqRel</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Ordering</span>::<span class="n">Acquire</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nb">Ok</span><span class="p">(</span><span class="n">_</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// If the task is not yet scheduled and isn&#39;t currently running, now is the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">        </span><span class="c1">// time to schedule it.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="no">RUNNING</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Schedule the task.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">            </span><span class="bp">Self</span>::<span class="n">schedule</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="n">ScheduleInfo</span>::<span class="n">new</span><span class="p">(</span><span class="kc">false</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Drop the waker.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">            </span><span class="bp">Self</span>::<span class="n">drop_waker</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">break</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nb">Err</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>这段代码尝试通过修改<code>SCHEDULED</code>标志位为1, 并在修改成功之后对任务调用<code>schedule</code>, 以此将其插入到执行队列当中. 至此我们终于找到了调用<code>schedule</code>的源头——<code>wake</code>函数.</p>
+<p>而这个<code>wake</code>函数, 就是被链接到<code>Waker</code>的<code>vtable</code>里的那个<code>wake</code>函数! 换句话来说, 插入执行队列的操作最终是由<code>Waker.wake</code>来完成的.</p>
+<p>很有趣, 找了一圈居然重新找到了先前<code>Future::poll</code>里传入的<code>Waker</code>上! 想要将任务重新恢复到执行器里, 靠的正是唤醒器的唤醒操作, 确实很合理.</p>
+<h3 id="重归waker">重归Waker
+</h3><p>现在, 是时候重新回到<code>Waker</code>, 解答我们之前的疑问了.</p>
+<h4 id="调用wakerwake的时机">调用waker::wake的时机
+</h4><p><code>Waker::wake</code>的调用时机是怎样的呢? 我们来回顾一下<code>Future::poll</code>吧:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">fn</span> <span class="nf">poll</span><span class="p">(</span><span class="bp">self</span>: <span class="nc">Pin</span><span class="o">&lt;&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">Self</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">cx</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">Context</span><span class="o">&lt;</span><span class="nb">&#39;_</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Poll</span><span class="o">&lt;</span><span class="bp">Self</span>::<span class="n">Output</span><span class="o">&gt;</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>Context</code>当中包含了<code>Waker</code>信息, <code>Waker</code>通过<code>poll</code>调用链上逐级传递下去. 一旦出现需要返回<code>Pending</code>的情况, 那么当前的执行过程就不得不中止了. 这种情况下, 对于<code>waker</code>有两种可能的操作:</p>
+<ul>
+<li>保存当前的<code>Waker</code>, 等待当前状态能够进一步推进的时候, 调用<code>waker</code>将其放入执行器的队首使其快速恢复执行.</li>
+<li>直接再次唤醒<code>Waker</code>, 将对应的任务插入到执行器的队尾.</li>
+</ul>
+<p>这两种处理方式在实践的时候都有使用, 前者一般用于IO密集型任务, 会在IO信号到来的时候通过先前<code>Pending</code>时保存的<code>waker</code>进行唤醒; 而后者一般用于普通的任务调度过程, 实现了一个较为传统的队列维护过程.</p>
+<h4 id="waker到底唤醒了谁--从哪来">waker到底唤醒了谁 / 从哪来
+</h4><p>这个问题还需要进一步的探讨. 为了研究清楚这个问题, 我写了一段嵌套调用<code>Future</code>然后返回<code>Pending</code>的代码, 发现每次<code>poll</code>的时候都会经历一次完整的函数调用链.</p>
+<p>所以我们可以得出结论: 每一次尝试<code>poll</code>的时候都会从根<code>Future</code>出发, 经历一次完整的<code>poll</code>调用链, 直到最深层返回<code>Pending</code>或者<code>Ready</code>为止.</p>
+<p>这也很好解释, 因为我们的<code>Waker</code>是逐级向下传递的, 保存的就是最开始<code>Future.poll</code>时传入的<code>Waker</code>. 所以每次尝试唤醒的时候也会调用这个传递下来的<code>Waker</code>.</p>
+<p>那么这个初始的<code>Waker</code>又是怎么传入的? 查看<code>async_task::run</code>, 发现是在<code>run</code>的过程当中调用<code>poll</code>时传入的. 回顾一下, <code>Waker</code>内部其实就是<code>vtable</code>和一个指向<code>RawTask</code>的指针, 所以这个<code>Waker</code>的生成是很方便的.</p>
+<h3 id="总结">总结
+</h3><p>至此, 我们终于搞明白了一个完整的执行流程当中, 任务的信息是如何被传递的:</p>
+<ol>
+<li>任务以<code>Future</code>参数形式传入<code>spawn</code>函数</li>
+<li><code>spawn</code>函数通过<code>Future</code>生成<code>RawTask</code>, 再通过<code>RawTask</code>派生出<code>Runnable</code>和<code>Task</code></li>
+<li>先调用一次<code>runnable.schedule</code>, 将任务插入到执行器队列当中, 至此进入执行器执行的过程当中</li>
+<li>执行器进行一次执行, 先将<code>Runnable</code>形态的任务从队首取出</li>
+<li>对于取出的<code>Runnable</code>调用它的<code>run</code>函数, <code>run</code>内部会对它对应的<code>Future</code>调用一次<code>poll</code>, 并传入携带有自身<code>wake</code>函数实现方式的<code>Waker</code>信息</li>
+<li>假如在执行过程当中遇到了一次<code>Pending</code>状态的传回, 那么当前任务需要阻塞, 同时需要保存<code>Waker</code>便于下次唤醒</li>
+<li>在适当的时机 (比如某些信号来临的时候) 重新取出先前保存的<code>Waker</code>信息, 调用其中的<code>wake</code>函数</li>
+<li><code>wake</code>函数会通过<code>Task::wake</code>调用<code>schedule</code>函数, 最终通过<code>schedule</code>函数将任务信息重新插入回到任务执行队列当中. 至此实现了任务的循环调用过程.</li>
+</ol>
+<p>完结撒花~</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>2024 crpboy, All rights reserved.</span>
+    </section>
+    </footer>
+
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI&#43;WdtXRGWt2kTvGFasHpSy3SV"crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG&#43;vnGctmUb0ZY0l8"crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"integrity="sha384-&#43;VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4&#43;/RRE05"crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2024 crpboy
+    </section>
+    
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.26.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
