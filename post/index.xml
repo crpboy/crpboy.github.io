@@ -52,7 +52,7 @@
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;异步函数可以被转化为一个状态机模型. 本例中, 异步函数被三个&lt;code&gt;.await&lt;/code&gt;语句拆分成为了四个部分, 每个&lt;code&gt;.await&lt;/code&gt;都有 完成 / 等待 两种执行结果, 将它上下的执行部分通过 完成 / 等待 这两条状态转移边连接起来.&lt;/p&gt;
 &lt;p&gt;画个图就很清楚了.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/future_fsm.drawio.svg&#34;
+&lt;p&gt;&lt;img src=&#34;https://crpboy.github.io/p/os-future/future_fsm.drawio.svg&#34;
 	
 	
 	
